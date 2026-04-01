@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   const { OPENSKY_CLIENT_ID, OPENSKY_CLIENT_SECRET } = process.env;
 
   if (!OPENSKY_CLIENT_ID || !OPENSKY_CLIENT_SECRET) {
-    return res.status(200).json({ access_token: null, error: 'Faltan variables de entorno en Vercel.' });
+    return res.status(200).json({ access_token: null, error: 'Config missing' });
   }
 
   const authHeader = Buffer.from(`${OPENSKY_CLIENT_ID}:${OPENSKY_CLIENT_SECRET}`).toString('base64');
@@ -13,22 +13,16 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 
         'Authorization': `Basic ${authHeader}`,
-        'Content-Type': 'application/x-www-form-urlencoded' 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       },
       body: 'grant_type=client_credentials',
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(8000)
     });
 
     const data = await response.json();
-
-    if (response.ok) {
-      return res.status(200).json(data);
-    } else {
-      console.warn('VERCEL: Auth denegada, modo anónimo.');
-      return res.status(200).json({ access_token: null, expires_in: 0 });
-    }
+    return res.status(200).json(data);
   } catch (error) {
-    console.error('VERCEL CRITICAL:', error.message);
-    return res.status(200).json({ access_token: null, expires_in: 0, error: error.message });
+    return res.status(200).json({ access_token: null, error: 'Auth server unreachable' });
   }
 }
