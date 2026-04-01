@@ -3,23 +3,26 @@ exports.handler = async (event, context) => {
   
   const STATES_URL = 'https://opensky-network.org/api/states/all';
 
+  // Si el token es literal 'null' (pasado por la URL), lo ignoramos
+  const cleanToken = (token && token !== 'null' && token !== 'undefined') ? token : null;
+
   try {
-    console.log('SERVERLESS: Intentando obtener estados de vuelos...');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    console.log(`SERVERLESS (API): Obteniendo estados (${cleanToken ? 'AUTENTICADO' : 'ANÓNIMO'})...`);
+    const headers = cleanToken ? { 'Authorization': `Bearer ${cleanToken}` } : {};
 
     const response = await fetch(STATES_URL, {
       headers,
-      signal: AbortSignal.timeout(15000) // Mucho más margen para la data pesada de vuelos
+      signal: AbortSignal.timeout(15000)
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       console.warn(`SERVERLESS (API): Error con token (Status ${response.status}). Retrying Anonymous...`);
-      // Fallback a modo anónimo si el token no funciona
+      // Fallback a modo anónimo
       const anonResponse = await fetch(STATES_URL, { signal: AbortSignal.timeout(15000) });
       const anonData = await anonResponse.json();
-      return { statusCode: anonResponse.status, body: JSON.stringify(anonData) };
+      return { statusCode: 200, body: JSON.stringify(anonData) };
     }
     
     return {
@@ -29,7 +32,7 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('SERVERLESS API ERROR:', error.message);
     
-    // Último intento: Forzar anónimo si falla por timeout arriba
+    // Intento final: Cargar como ANÓNIMO si hubo timeout antes
     try {
       console.log('SERVERLESS: Fallback final a modo ANÓNIMO...');
       const fallback = await fetch(STATES_URL, { signal: AbortSignal.timeout(10000) });
@@ -38,7 +41,7 @@ exports.handler = async (event, context) => {
     } catch (finalError) {
       return {
         statusCode: 504,
-        body: JSON.stringify({ error: 'La API de OpenSky no responde. Intentando de nuevo...' })
+        body: JSON.stringify({ error: 'La API de OpenSky no responde. Reintentando...' })
       };
     }
   }
