@@ -1,12 +1,15 @@
 import axios from 'axios';
 
-// Usamos NUESTRO PROPIO PROPIO PROXY en Vercel Edge
-const PROXY_URL = '/api/proxy?url=';
-const AUTH_URL = `${PROXY_URL}https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token`;
-const BASE_URL = `${PROXY_URL}https://opensky-network.org/api/states/all`;
+// HARDCODEADO PARA PROBAR (A peticion del usuario para descartar errores de Env de Vercel)
+const CLIENT_ID = 'alejom-api-client';
+const CLIENT_SECRET = 'ONCGeVSIbJPzqppJ4wsnJKbbwYqPCEbb';
 
-const CLIENT_ID = import.meta.env.VITE_OPENSKY_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.VITE_OPENSKY_CLIENT_SECRET;
+const PROXY_URL = '/api/proxy?url=';
+const AUTH_URL_RAW = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
+const STATES_URL_RAW = 'https://opensky-network.org/api/states/all';
+
+const AUTH_URL = `${PROXY_URL}${encodeURIComponent(AUTH_URL_RAW)}`;
+const BASE_URL = `${PROXY_URL}${encodeURIComponent(STATES_URL_RAW)}`;
 
 class OpenSkyClient {
   constructor() {
@@ -59,7 +62,9 @@ class OpenSkyClient {
         verticalRate: state[11]
       })).filter(f => f.lat !== null && f.lng !== null);
 
-      this.lastSuccessfulFlights = flights;
+      if (flights.length > 0) {
+        this.lastSuccessfulFlights = flights;
+      }
       return flights;
     } catch (error) {
       if (this.lastSuccessfulFlights.length > 0) {

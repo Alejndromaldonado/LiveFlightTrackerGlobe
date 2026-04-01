@@ -17,10 +17,12 @@ export default async function (req) {
 
   if (!target) return new Response('Missing url', { status: 400 });
 
-  // OPTIMIZACIÓN CRÍTICA: Si pedimos 'states/all', le añadimos un filtro de área global.
-  // Esto obliga a la base de datos de OpenSky a usar índices y responder MUCHO más rápido (evita el 504).
-  if (target.includes('states/all') && !target.includes('lamin')) {
-    target += '?lamin=-70&lomin=-170&lamax=70&lomax=170';
+  // OPTIMIZACIÓN: Si pedimos 'states/all', le añadimos un filtro de área global.
+  if (target.includes('states/all')) {
+    const separator = target.includes('?') ? '&' : '?';
+    if (!target.includes('lamin')) {
+      target += `${separator}lamin=-70&lomin=-170&lamax=70&lomax=170`;
+    }
   }
 
   try {
