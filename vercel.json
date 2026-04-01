@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/opensky-auth",
+      "destination": "/api/opensky-auth"
+    },
+    {
+      "source": "/opensky-api",
+      "destination": "/api/opensky-api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
