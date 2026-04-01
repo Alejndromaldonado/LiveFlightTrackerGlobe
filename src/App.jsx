@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const { flights, loading, error, refresh, dataMode, lastUpdateTime } = useFlights();
+  const { flights, stats, loading, error, refresh, dataMode, lastUpdateTime } = useFlights();
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [displayMode, setDisplayMode] = useState('light'); // 'light' or 'heavy'
@@ -72,11 +72,11 @@ function App() {
         onClose={() => setSelectedFlight(null)} 
       />
 
-      <StatsPanel flights={filteredFlights} />
-      {!selectedFlight && <InsightsPanel flights={filteredFlights} />}
+      <StatsPanel stats={stats} />
+      {!selectedFlight && <InsightsPanel stats={stats} />}
 
       <footer className="globe-footer">
-        <p>Datos en tiempo real de OpenSky Network | {flights.length} aeronaves activas detectadas</p>
+        <p>Datos en tiempo real de OpenSky Network | {stats?.total_airborne || flights.length} aeronaves activas detectadas</p>
       </footer>
     </div>
   );

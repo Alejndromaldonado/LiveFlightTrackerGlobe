@@ -1,30 +1,29 @@
 import axios from 'axios';
 
 // --- CONFIGURACIÓN SUPABASE (Data Lake del Radar) ---
-const SUPABASE_URL = 'https://jpqsmpldwttqnffprapx.supabase.co/rest/v1/flights';
+const SUPABASE_BASE_URL = 'https://jpqsmpldwttqnffprapx.supabase.co/rest/v1';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcXNtcGxkd3R0cW5mZnByYXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzk1ODksImV4cCI6MjA5MDY1NTU4OX0.9UNmlqL3FVN5lB_xL1cr5OjsfQEfUqStDCmK47_NXV0';
 
 class OpenSkyClient {
   constructor() {
     this.lastSuccessfulFlights = [];
+    this.lastSuccessfulStats = null;
   }
 
   /**
-   * Obtiene los vuelos desde Supabase (Alimentado por AWS Worker)
+   * Obtiene los 400 vuelos mas relevantes para el globo (Rendimiento)
    */
   async getFlights() {
     try {
-      // Pedimos solo los vuelos que estan en el aire (lat/lng no nulos)
-      // Y opcionalmente podemos filtrar por tiempo si queremos ser mas estrictos
-      const response = await axios.get(SUPABASE_URL, {
+      const response = await axios.get(`${SUPABASE_BASE_URL}/flights`, {
         headers: {
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`
         },
         params: {
-          // Opcional: Solo traer vuelos que se hayan actualizado hace menos de 10 min
-          // select: '*',
-          // order: 'updated_at.desc'
+          select: '*',
+          limit: 400,
+          order: 'velocity.desc.nullslast' // Traemos los mas rapidos primero
         }
       });
       
@@ -41,24 +40,34 @@ class OpenSkyClient {
         verticalRate: row.vertical_rate
       }));
 
-      if (flights.length > 0) {
-        this.lastSuccessfulFlights = flights;
-      }
+      if (flights.length > 0) this.lastSuccessfulFlights = flights;
       return flights;
     } catch (error) {
-      console.warn('Fallo en Supabase, intentando cargar local cache:', error.message);
-      if (this.lastSuccessfulFlights.length > 0) {
-        return this.lastSuccessfulFlights;
-      }
+      if (this.lastSuccessfulFlights.length > 0) return this.lastSuccessfulFlights;
       throw error;
     }
   }
 
-  // Mantenemos este metodo por compatibilidad si el frontend lo requiere, aunque ya no necesitemos Token
-  async getAccessToken() {
-    return "supabase_active_session";
+  /**
+   * Obtiene las ESTADÍSTICAS TOTALES de los miles de vuelos (Carga Instantanea)
+   */
+  async getStats() {
+    try {
+      // Llamamos a la funcion RPC que creamos en Supabase
+      const response = await axios.post(`${SUPABASE_BASE_URL}/rpc/get_flight_stats`, {}, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      
+      this.lastSuccessfulStats = response.data;
+      return response.data;
+    } catch (error) {
+      console.warn('Fallo en RPC Stats:', error.message);
+      return this.lastSuccessfulStats;
+    }
   }
 }
 
-// Exportamos como 'opensky' para no romper ningun componente existente
 export const opensky = new OpenSkyClient();

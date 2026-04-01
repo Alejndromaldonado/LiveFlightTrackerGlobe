@@ -1,52 +1,31 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Plane, Target, Info } from 'lucide-react';
 
-const StatsPanel = ({ flights }) => {
+const StatsPanel = ({ stats }) => {
   const [hoveredStat, setHoveredStat] = useState(null);
-
-  const stats = useMemo(() => {
-    if (!flights.length) return null;
-
-    const total = flights.length;
-    let climbing = 0;
-    let descending = 0;
-    let cruising = 0;
-    let avgSpeed = 0;
-    let highAlt = 0;
-
-    flights.forEach(f => {
-      if (f.verticalRate > 0.5) climbing++;
-      else if (f.verticalRate < -0.5) descending++;
-      else cruising++;
-
-      avgSpeed += f.velocity || 0;
-      if (f.alt > 9144) highAlt++;
-    });
-
-    return {
-      climbing: Math.round((climbing / total) * 100),
-      descending: Math.round((descending / total) * 100),
-      cruising: Math.round((cruising / total) * 100),
-      avgSpeed: Math.round((avgSpeed / total) * 3.6),
-      highAlt: Math.round((highAlt / total) * 100)
-    };
-  }, [flights]);
 
   const tooltips = {
     climbing: "Porcentaje de aeronaves ganando altitud (vertical_rate > 0.5 m/s). Indica despegues o cambios de nivel.",
     descending: "Porcentaje de aeronaves perdiendo altitud (vertical_rate < -0.5 m/s). Indica descensos o aproximaciones.",
     cruising: "Flota volando de forma estable. Aviones con una tasa vertical cercana a cero (crucero).",
-    speed: "Promedio de la velocidad terrestre (velocity) de todos los aviones activos, convertido a km/h.",
+    speed: "Velocidad terrestre del avión más rápido actualmente en la red global de OpenSky.",
     altitude: "Porcentaje de aviones volando en la 'capa superior' (por encima de los 30,000 pies o 9,144 metros)."
   };
 
+  // Si no hay datos, tratamos de dar una experiencia de carga
   if (!stats) return null;
+
+  // Calculamos los porcentajes relativos a la flota total
+  const total = stats.total_airborne || 1;
+  const climbingPct = Math.round((stats.climbing / total) * 100);
+  const descendingPct = Math.round((stats.descending / total) * 100);
+  const cruisingPct = Math.round((stats.cruising / total) * 100);
 
   return (
     <div className="stats-panel">
       <div className="stats-header">
         <BarChart3 size={18} />
-        <h3>Análisis de Datos Real-Time</h3>
+        <h3>Análisis de Datos Masivos</h3>
       </div>
       
       <div className="stats-grid">
@@ -58,7 +37,7 @@ const StatsPanel = ({ flights }) => {
           <div className="stat-icon climbing"><TrendingUp size={14} /></div>
           <div className="stat-info">
             <span className="label">En Ascenso</span>
-            <span className="value">{stats.climbing}%</span>
+            <span className="value">{climbingPct}%</span>
           </div>
         </div>
 
@@ -70,7 +49,7 @@ const StatsPanel = ({ flights }) => {
           <div className="stat-icon descending"><TrendingDown size={14} /></div>
           <div className="stat-info">
             <span className="label">En Descenso</span>
-            <span className="value">{stats.descending}%</span>
+            <span className="value">{descendingPct}%</span>
           </div>
         </div>
 
@@ -82,7 +61,7 @@ const StatsPanel = ({ flights }) => {
           <div className="stat-icon cruising"><Plane size={14} /></div>
           <div className="stat-info">
             <span className="label">En Crucero</span>
-            <span className="value">{stats.cruising}%</span>
+            <span className="value">{cruisingPct}%</span>
           </div>
         </div>
 
@@ -93,8 +72,8 @@ const StatsPanel = ({ flights }) => {
         >
           <div className="stat-icon speed"><Target size={14} /></div>
           <div className="stat-info">
-            <span className="label">Vel. Media</span>
-            <span className="value">{stats.avgSpeed} <small>km/h</small></span>
+            <span className="label">Top Vel.</span>
+            <span className="value">{Math.round(stats.fastest_flight?.velocity * 3.6 || 0)} <small>km/h</small></span>
           </div>
         </div>
       </div>
@@ -105,11 +84,11 @@ const StatsPanel = ({ flights }) => {
         onMouseLeave={() => setHoveredStat(null)}
       >
         <div className="dist-label">
-          <span>Flota en Alta Cota (&gt;30k ft)</span>
-          <span>{stats.highAlt}%</span>
+          <span>Flota Activa (Total)</span>
+          <span>{stats.total_airborne || 0}</span>
         </div>
         <div className="dist-bar">
-          <div className="dist-fill" style={{ width: `${stats.highAlt}%` }}></div>
+          <div className="dist-fill" style={{ width: `100%` }}></div>
         </div>
       </div>
 
