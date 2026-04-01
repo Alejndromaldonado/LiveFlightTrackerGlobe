@@ -11,9 +11,10 @@ class OpenSkyClient {
   }
 
   /**
-   * Obtiene los 400 vuelos mas relevantes para el globo (Rendimiento)
+   * Obtiene los vuelos globales (limitado por rendimiento segun el modo)
+   * limit: 400 (Light) o 800 (Heavy)
    */
-  async getFlights() {
+  async getFlights(limit = 400) {
     try {
       const response = await axios.get(`${SUPABASE_BASE_URL}/flights`, {
         headers: {
@@ -22,8 +23,8 @@ class OpenSkyClient {
         },
         params: {
           select: '*',
-          limit: 400,
-          order: 'velocity.desc.nullslast' // Traemos los mas rapidos primero
+          limit: limit,
+          order: 'velocity.desc.nullslast'
         }
       });
       
@@ -48,12 +49,8 @@ class OpenSkyClient {
     }
   }
 
-  /**
-   * Obtiene las ESTADÍSTICAS TOTALES de los miles de vuelos (Carga Instantanea)
-   */
   async getStats() {
     try {
-      // Llamamos a la funcion RPC que creamos en Supabase
       const response = await axios.post(`${SUPABASE_BASE_URL}/rpc/get_flight_stats`, {}, {
         headers: {
           'apikey': SUPABASE_KEY,

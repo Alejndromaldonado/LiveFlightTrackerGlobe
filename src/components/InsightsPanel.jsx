@@ -49,21 +49,22 @@ const InsightsPanel = ({ stats }) => {
       )
     },
     {
-      title: "Análisis Big Data",
+      title: "Top Orígenes (Global)",
       icon: <Layers size={18} />,
       content: (
         <div className="slideshow-content countries">
-          <div className="big-data-box">
-             <div className="data-row">
-               <span>Puntos en Globe:</span>
-               <span>400</span>
-             </div>
-             <div className="data-row">
-               <span>Nube Supabase:</span>
-               <span>{stats.total_airborne}</span>
-             </div>
-             <p className="data-info">El globo renderiza solo el top 400 por rendimiento, mientras las estadísticas operan sobre el total mundial.</p>
-          </div>
+          {(stats.top_countries || []).map((item, i) => (
+            <div key={i} className="bar-item">
+              <div className="bar-label"><span>{item.name}</span> <span>{item.count}</span></div>
+              <div className="bar-bg">
+                <div 
+                  className="bar-fill" 
+                  style={{ width: `${(item.count / stats.top_countries[0].count) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          ))}
+          {!stats.top_countries && <p className="data-info">Sincronizando orígenes...</p>}
         </div>
       )
     }

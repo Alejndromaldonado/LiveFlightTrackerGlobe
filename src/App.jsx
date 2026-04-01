@@ -9,10 +9,11 @@ import { Loader2 } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const { flights, stats, loading, error, refresh, dataMode, lastUpdateTime } = useFlights();
+  const [displayMode, setDisplayMode] = useState('light'); // 'light' or 'heavy'
+  const limit = displayMode === 'heavy' ? 800 : 400;
+  const { flights, stats, loading, error, refresh, dataMode, lastUpdateTime } = useFlights(limit);
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [displayMode, setDisplayMode] = useState('light'); // 'light' or 'heavy'
 
   const filteredFlights = flights.filter(f => 
     f.callsign.includes(searchTerm) || f.icao24.includes(searchTerm.toLowerCase())

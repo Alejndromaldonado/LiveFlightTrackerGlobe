@@ -8,14 +8,12 @@ const StatsPanel = ({ stats }) => {
     climbing: "Porcentaje de aeronaves ganando altitud (vertical_rate > 0.5 m/s). Indica despegues o cambios de nivel.",
     descending: "Porcentaje de aeronaves perdiendo altitud (vertical_rate < -0.5 m/s). Indica descensos o aproximaciones.",
     cruising: "Flota volando de forma estable. Aviones con una tasa vertical cercana a cero (crucero).",
-    speed: "Velocidad terrestre del avión más rápido actualmente en la red global de OpenSky.",
-    altitude: "Porcentaje de aviones volando en la 'capa superior' (por encima de los 30,000 pies o 9,144 metros)."
+    speed: "Velocidad media (Promedio) de toda la flota mundial procesada en Supabase.",
+    altitude: "Aviones detectados actualmente por la red global de OpenSky y guardados en Supabase."
   };
 
-  // Si no hay datos, tratamos de dar una experiencia de carga
   if (!stats) return null;
 
-  // Calculamos los porcentajes relativos a la flota total
   const total = stats.total_airborne || 1;
   const climbingPct = Math.round((stats.climbing / total) * 100);
   const descendingPct = Math.round((stats.descending / total) * 100);
@@ -72,8 +70,8 @@ const StatsPanel = ({ stats }) => {
         >
           <div className="stat-icon speed"><Target size={14} /></div>
           <div className="stat-info">
-            <span className="label">Top Vel.</span>
-            <span className="value">{Math.round(stats.fastest_flight?.velocity * 3.6 || 0)} <small>km/h</small></span>
+            <span className="label">Vel. Media</span>
+            <span className="value">{Math.round(stats.avg_velocity * 3.6 || 0)} <small>km/h</small></span>
           </div>
         </div>
       </div>
@@ -84,8 +82,8 @@ const StatsPanel = ({ stats }) => {
         onMouseLeave={() => setHoveredStat(null)}
       >
         <div className="dist-label">
-          <span>Flota Activa (Total)</span>
-          <span>{stats.total_airborne || 0}</span>
+          <span>Flota Activa (Mundial)</span>
+          <span>{stats.total_airborne + stats.total_ground || 0}</span>
         </div>
         <div className="dist-bar">
           <div className="dist-fill" style={{ width: `100%` }}></div>

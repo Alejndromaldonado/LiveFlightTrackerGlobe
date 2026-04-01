@@ -5,7 +5,7 @@ const STORAGE_KEY = 'opensky_last_flights';
 const STATS_KEY = 'opensky_last_stats';
 const TIMESTAMP_KEY = 'opensky_last_update';
 
-export const useFlights = () => {
+export const useFlights = (limit = 400) => {
   const [flights, setFlights] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,9 +17,8 @@ export const useFlights = () => {
     try {
       setLoading(true);
       
-      // Llamadas en paralelo para maxima velocidad
       const [flightsData, statsData] = await Promise.all([
-        opensky.getFlights(),
+        opensky.getFlights(limit),
         opensky.getStats()
       ]);
       
@@ -40,7 +39,6 @@ export const useFlights = () => {
       setLoading(false);
     } catch (err) {
       console.warn('Supabase fetch failed, loading local cache:', err);
-      
       const cached = localStorage.getItem(STORAGE_KEY);
       const cachedStats = localStorage.getItem(STATS_KEY);
       const cachedTime = localStorage.getItem(TIMESTAMP_KEY);
@@ -60,10 +58,9 @@ export const useFlights = () => {
 
   useEffect(() => {
     fetchFlights();
-    // Refrescamos cada 2 minutos para no saturar Supabase ni el servidor
     const interval = setInterval(fetchFlights, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [limit]); // Re-fetch when limit changes
 
   return { flights, stats, loading, error, refresh: fetchFlights, dataMode, lastUpdateTime };
 };
