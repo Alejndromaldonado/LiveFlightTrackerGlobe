@@ -2,16 +2,15 @@ exports.handler = async (event, context) => {
   const { OPENSKY_CLIENT_ID, OPENSKY_CLIENT_SECRET } = process.env;
 
   if (!OPENSKY_CLIENT_ID || !OPENSKY_CLIENT_SECRET) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Faltan variables de entorno.' }) };
+    // Si faltan variables, avisamos pero no matamos la ejecución
+    return { statusCode: 200, body: JSON.stringify({ access_token: null, error: 'Faltan credenciales' }) };
   }
 
-  // Estándar OAuth2: Credenciales en la cabecera convertidas a Base64
   const authHeader = Buffer.from(`${OPENSKY_CLIENT_ID}:${OPENSKY_CLIENT_SECRET}`).toString('base64');
-  
   const AUTH_URL = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
 
   try {
-    console.log('SERVERLESS (Auth): Solicitando token vía Basic Authorization header...');
+    console.log('SERVERLESS (Auth): Intentando OAuth2...');
     const response = await fetch(AUTH_URL, {
       method: 'POST',
       headers: { 
@@ -19,23 +18,23 @@ exports.handler = async (event, context) => {
         'Content-Type': 'application/x-www-form-urlencoded' 
       },
       body: 'grant_type=client_credentials',
-      signal: AbortSignal.timeout(12000) // 12 segundos de margen
+      signal: AbortSignal.timeout(6000) // Timeout rápido para no hacer esperar al usuario
     });
 
     const data = await response.json();
 
     if (response.ok) {
-      console.log('SERVERLESS (Auth): ¡Éxito con Basic Auth header!');
       return { statusCode: 200, body: JSON.stringify(data) };
     } else {
-      console.error('SERVERLESS (Auth): Servidor respondió con error:', data);
-      return { statusCode: response.status, body: JSON.stringify(data) };
+      console.warn('SERVERLESS (Auth): Auth denegada, continuando en modo anónimo.');
+      return { statusCode: 200, body: JSON.stringify({ access_token: null, expires_in: 0 }) };
     }
   } catch (error) {
-    console.error('SERVERLESS (Auth) FATAL:', error.message);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Timeout o Bloqueo de Red', message: error.message })
+    console.warn('SERVERLESS (Auth): Bloqueo de red detectado. Forzando modo anónimo.');
+    // DEVOLVEMOS 200 con token null para que el navegador NO muestre error y siga a la API
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify({ access_token: null, expires_in: 0, status: 'fallback_active' }) 
     };
   }
 };
