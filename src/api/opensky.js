@@ -1,84 +1,64 @@
 import axios from 'axios';
 
-// HARDCODEADO PARA PROBAR (A peticion del usuario para descartar errores de Env de Vercel)
-const CLIENT_ID = 'alejom-api-client';
-const CLIENT_SECRET = 'ONCGeVSIbJPzqppJ4wsnJKbbwYqPCEbb';
-
-const PROXY_URL = '/api/proxy?url=';
-
-// Filtro de AREA para que la API responda en <10s (Bypassing Vercel 504)
-// Box: America y Europa (zonas mas densas y rapidas)
-const GEO_BOX = 'lamin=-10&lomin=-130&lamax=70&lomax=50';
-
-const AUTH_URL_RAW = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
-const STATES_URL_RAW = `https://opensky-network.org/api/states/all?${GEO_BOX}`;
-
-const AUTH_URL = `${PROXY_URL}${encodeURIComponent(AUTH_URL_RAW)}`;
-const BASE_URL = `${PROXY_URL}${encodeURIComponent(STATES_URL_RAW)}`;
+// --- CONFIGURACIÓN SUPABASE (Data Lake del Radar) ---
+const SUPABASE_URL = 'https://jpqsmpldwttqnffprapx.supabase.co/rest/v1/flights';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcXNtcGxkd3R0cW5mZnByYXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzk1ODksImV4cCI6MjA5MDY1NTU4OX0.9UNmlqL3FVN5lB_xL1cr5OjsfQEfUqStDCmK47_NXV0';
 
 class OpenSkyClient {
   constructor() {
-    this.accessToken = null;
-    this.expiresAt = null;
     this.lastSuccessfulFlights = [];
   }
 
-  async getAccessToken() {
-    if (this.accessToken && this.expiresAt && Date.now() < this.expiresAt) {
-      return this.accessToken;
-    }
-
-    try {
-      const params = new URLSearchParams();
-      params.append('grant_type', 'client_credentials');
-      params.append('client_id', CLIENT_ID);
-      params.append('client_secret', CLIENT_SECRET);
-
-      const response = await axios.post(AUTH_URL, params.toString(), {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-
-      this.accessToken = response.data.access_token;
-      this.expiresAt = Date.now() + (response.data.expires_in - 60) * 1000;
-      return this.accessToken;
-    } catch (error) {
-      console.warn('OpenSky Auth error via Proxy, trying anonymous.');
-      return null;
-    }
-  }
-
+  /**
+   * Obtiene los vuelos desde Supabase (Alimentado por AWS Worker)
+   */
   async getFlights() {
     try {
-      const token = await this.getAccessToken();
-      const response = await axios.get(BASE_URL, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      // Pedimos solo los vuelos que estan en el aire (lat/lng no nulos)
+      // Y opcionalmente podemos filtrar por tiempo si queremos ser mas estrictos
+      const response = await axios.get(SUPABASE_URL, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        params: {
+          // Opcional: Solo traer vuelos que se hayan actualizado hace menos de 10 min
+          // select: '*',
+          // order: 'updated_at.desc'
+        }
       });
       
-      const flights = (response.data.states || []).map(state => ({
-        icao24: state[0],
-        callsign: (state[1] || '').trim(),
-        origin: state[2],
-        lng: state[5],
-        lat: state[6],
-        alt: state[7], // meters
-        onGround: state[8],
-        velocity: state[9], // m/s
-        heading: state[10],
-        verticalRate: state[11]
-      })).filter(f => f.lat !== null && f.lng !== null);
+      const flights = (response.data || []).map(row => ({
+        icao24: row.icao24,
+        callsign: (row.callsign || '').trim(),
+        origin: row.origin,
+        lng: row.lng,
+        lat: row.lat,
+        alt: row.alt,
+        onGround: row.lat === null || row.lng === null,
+        velocity: row.velocity,
+        heading: row.heading,
+        verticalRate: row.vertical_rate
+      }));
 
       if (flights.length > 0) {
         this.lastSuccessfulFlights = flights;
       }
       return flights;
     } catch (error) {
+      console.warn('Fallo en Supabase, intentando cargar local cache:', error.message);
       if (this.lastSuccessfulFlights.length > 0) {
         return this.lastSuccessfulFlights;
       }
-      console.error('Failed to fetch flights via Proxy:', error);
       throw error;
     }
   }
+
+  // Mantenemos este metodo por compatibilidad si el frontend lo requiere, aunque ya no necesitemos Token
+  async getAccessToken() {
+    return "supabase_active_session";
+  }
 }
 
+// Exportamos como 'opensky' para no romper ningun componente existente
 export const opensky = new OpenSkyClient();
