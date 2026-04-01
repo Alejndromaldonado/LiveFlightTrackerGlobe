@@ -58,7 +58,7 @@ const InsightsPanel = ({ flights }) => {
             </div>
             <div className="ring-labels">
               <div className="ring-label">
-                <span className="dot airborne"></span> Voando: {insights?.status.airborne}
+                <span className="dot airborne"></span> Volando: {insights?.status.airborne}
               </div>
               <div className="ring-label">
                 <span className="dot ground"></span> En Tierra: {insights?.status.onGround}
