@@ -1,13 +1,10 @@
-const axios = require('axios');
-
 exports.handler = async (event, context) => {
   const { OPENSKY_CLIENT_ID, OPENSKY_CLIENT_SECRET } = process.env;
 
   if (!OPENSKY_CLIENT_ID || !OPENSKY_CLIENT_SECRET) {
-    console.error('SERVERLESS ERROR: Missing OPENSKY_CLIENT_ID or OPENSKY_CLIENT_SECRET in Netlify environment.');
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Configuración del servidor incompleta (Faltan env vars)' })
+      body: JSON.stringify({ error: 'Configuración faltante: Verifica OPENSKY_CLIENT_ID y OPENSKY_CLIENT_SECRET en Netlify.' })
     };
   }
 
@@ -17,27 +14,35 @@ exports.handler = async (event, context) => {
     params.append('client_id', OPENSKY_CLIENT_ID);
     params.append('client_secret', OPENSKY_CLIENT_SECRET);
 
-    console.log('SERVERLESS: Authenticando con OpenSky...');
-    const response = await axios.post(
+    console.log('SERVERLESS (Fetch): Solicitando token a OpenSky...');
+    const response = await fetch(
       'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token',
-      params.toString(),
       {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
       }
     );
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('SERVERLESS OPEN-SKY ERROR:', data);
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ error: 'OpenSky Auth Denied', details: data })
+      };
+    }
+
     return {
       statusCode: 200,
-      body: JSON.stringify(response.data)
+      body: JSON.stringify(data)
     };
   } catch (error) {
-    console.error('SERVERLESS AUTH ERROR:', error.response?.data || error.message);
+    console.error('SERVERLESS CRASH:', error.message);
     return {
-      statusCode: error.response?.status || 500,
-      body: JSON.stringify({ 
-        error: 'Error de autenticación con OpenSky',
-        details: error.response?.data || error.message
-      })
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Crash en el servidor', message: error.message })
     };
   }
 };

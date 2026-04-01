@@ -1,28 +1,32 @@
-const axios = require('axios');
-
 exports.handler = async (event, context) => {
   const { token } = event.queryStringParameters || {};
   
   try {
-    console.log('SERVERLESS: Fetching flights from OpenSky API...');
-    const response = await axios.get('https://opensky-network.org/api/states/all', {
+    console.log('SERVERLESS: Fetching states...');
+    const response = await fetch('https://opensky-network.org/api/states/all', {
       headers: token ? {
         'Authorization': `Bearer ${token}`
       } : {}
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ error: 'OpenSky API Error', status: response.status })
+      };
+    }
     
     return {
       statusCode: 200,
-      body: JSON.stringify(response.data)
+      body: JSON.stringify(data)
     };
   } catch (error) {
-    console.error('SERVERLESS API ERROR:', error.response?.status, error.message);
+    console.error('SERVERLESS API CRASH:', error.message);
     return {
-      statusCode: error.response?.status || 500,
-      body: JSON.stringify({ 
-        error: 'Failed to fetch OpenSky states',
-        status: error.response?.status
-      })
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Failed to fetch OpenSky states', message: error.message })
     };
   }
 };
