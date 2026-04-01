@@ -1,10 +1,9 @@
 import axios from 'axios';
 
-// Usamos un Proxy de CORS para saltar el bloqueo de seguridad de OpenSky en navegadores
-// Y las llaves se exponen en el cliente para evitar el timeout de los servidores gratuitos
-const CORS_PROXY = 'https://corsproxy.io/?';
-const AUTH_URL = `${CORS_PROXY}https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token`;
-const BASE_URL = `${CORS_PROXY}https://opensky-network.org/api/states/all`;
+// Usamos NUESTRO PROPIO PROPIO PROXY en Vercel Edge
+const PROXY_URL = '/api/proxy?url=';
+const AUTH_URL = `${PROXY_URL}https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token`;
+const BASE_URL = `${PROXY_URL}https://opensky-network.org/api/states/all`;
 
 const CLIENT_ID = import.meta.env.VITE_OPENSKY_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_OPENSKY_CLIENT_SECRET;
@@ -35,7 +34,7 @@ class OpenSkyClient {
       this.expiresAt = Date.now() + (response.data.expires_in - 60) * 1000;
       return this.accessToken;
     } catch (error) {
-      console.warn('OpenSky Auth error, trying anonymous mode.');
+      console.warn('OpenSky Auth error via Proxy, trying anonymous.');
       return null;
     }
   }
@@ -66,7 +65,7 @@ class OpenSkyClient {
       if (this.lastSuccessfulFlights.length > 0) {
         return this.lastSuccessfulFlights;
       }
-      console.error('Failed to fetch flights:', error);
+      console.error('Failed to fetch flights via Proxy:', error);
       throw error;
     }
   }
