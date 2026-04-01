@@ -4,13 +4,15 @@ import Sidebar from './components/Sidebar';
 import ControlPanel from './components/ControlPanel';
 import StatsPanel from './components/StatsPanel';
 import InsightsPanel from './components/InsightsPanel';
+import MapModal from './components/MapModal';
 import { useFlights } from './hooks/useFlights';
 import { Loader2 } from 'lucide-react';
 import './index.css';
 
 function App() {
   const [displayMode, setDisplayMode] = useState('light'); // 'light' or 'heavy'
-  const limit = displayMode === 'heavy' ? 800 : 400;
+  const [showMap, setShowMap] = useState(false);
+  const limit = displayMode === 'heavy' ? 4000 : 400;
   const { flights, stats, loading, error, refresh, dataMode, lastUpdateTime } = useFlights(limit);
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +45,7 @@ function App() {
             className={displayMode === 'heavy' ? 'active' : ''} 
             onClick={() => setDisplayMode('heavy')}
           >
-            Heavy
+            Ultra Heavy
           </button>
         </div>
       </div>
@@ -71,10 +73,18 @@ function App() {
       <Sidebar 
         flight={selectedFlight} 
         onClose={() => setSelectedFlight(null)} 
+        onShowMap={() => setShowMap(true)}
       />
 
       <StatsPanel stats={stats} />
       {!selectedFlight && <InsightsPanel stats={stats} />}
+
+      {showMap && selectedFlight && (
+        <MapModal 
+          flight={selectedFlight} 
+          onClose={() => setShowMap(false)} 
+        />
+      )}
 
       <footer className="globe-footer">
         <p>Datos en tiempo real de OpenSky Network | {stats?.total_airborne || flights.length} aeronaves activas detectadas</p>

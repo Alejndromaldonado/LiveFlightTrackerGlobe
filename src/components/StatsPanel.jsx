@@ -9,7 +9,7 @@ const StatsPanel = ({ stats }) => {
     descending: "Porcentaje de aeronaves perdiendo altitud (vertical_rate < -0.5 m/s). Indica descensos o aproximaciones.",
     cruising: "Flota volando de forma estable. Aviones con una tasa vertical cercana a cero (crucero).",
     speed: "Velocidad media (Promedio) de toda la flota mundial procesada en Supabase.",
-    altitude: "Aviones detectados actualmente por la red global de OpenSky y guardados en Supabase."
+    quota: "Capacidad utilizada respecto al objetivo de monitorización global de 10,000 unidades."
   };
 
   if (!stats) return null;
@@ -18,6 +18,9 @@ const StatsPanel = ({ stats }) => {
   const climbingPct = Math.round((stats.climbing / total) * 100);
   const descendingPct = Math.round((stats.descending / total) * 100);
   const cruisingPct = Math.round((stats.cruising / total) * 100);
+  
+  // Capacidad respecto a 10,000 (La Cuota)
+  const quotaPct = Math.min((total / 10000) * 100, 100);
 
   return (
     <div className="stats-panel">
@@ -78,15 +81,15 @@ const StatsPanel = ({ stats }) => {
 
       <div 
         className="fleet-distribution clickable"
-        onMouseEnter={() => setHoveredStat('altitude')}
+        onMouseEnter={() => setHoveredStat('quota')}
         onMouseLeave={() => setHoveredStat(null)}
       >
         <div className="dist-label">
-          <span>Flota Activa (Mundial)</span>
-          <span>{stats.total_airborne + stats.total_ground || 0}</span>
+          <span>Capacidad Activa (Cuota)</span>
+          <span>{total} / 10000</span>
         </div>
         <div className="dist-bar">
-          <div className="dist-fill" style={{ width: `100%` }}></div>
+          <div className="dist-fill" style={{ width: `${quotaPct}%` }}></div>
         </div>
       </div>
 

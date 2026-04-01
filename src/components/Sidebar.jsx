@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plane, Navigation, Shield, Wind, Globe as GlobeIcon, X, Map } from 'lucide-react';
 
-const Sidebar = ({ flight, onClose }) => {
+const Sidebar = ({ flight, onClose, onShowMap }) => {
   if (!flight) return null;
 
   return (
@@ -55,15 +55,14 @@ const Sidebar = ({ flight, onClose }) => {
             </div>
           </div>
 
-          <a 
-            href={`https://www.openstreetmap.org/?mlat=${flight.lat}&mlon=${flight.lng}#map=12/${flight.lat}/${flight.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button 
+            onClick={onShowMap}
             className="osm-link"
+            style={{ width: '100%', border: 'none', cursor: 'pointer' }}
           >
             <Map className="icon" />
-            Ver en OpenStreetMap
-          </a>
+            Ver Mapa Interactivo (OSM)
+          </button>
         </div>
 
         <div className="altitude-section">
