@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-// En producción redirigimos a Netlify Functions para no exponer las Keys en el cliente
-const AUTH_URL = '/opensky-auth';
-const BASE_URL = '/opensky-api';
+// Usamos un Proxy de CORS para saltar el bloqueo de seguridad de OpenSky en navegadores
+// Y las llaves se exponen en el cliente para evitar el timeout de los servidores gratuitos
+const CORS_PROXY = 'https://corsproxy.io/?';
+const AUTH_URL = `${CORS_PROXY}https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token`;
+const BASE_URL = `${CORS_PROXY}https://opensky-network.org/api/states/all`;
+
+const CLIENT_ID = import.meta.env.VITE_OPENSKY_CLIENT_ID;
+const CLIENT_SECRET = import.meta.env.VITE_OPENSKY_CLIENT_SECRET;
 
 class OpenSkyClient {
   constructor() {
@@ -17,14 +22,20 @@ class OpenSkyClient {
     }
 
     try {
-      // Las credenciales se inyectan en la Netlify Function para seguridad
-      const response = await axios.post(AUTH_URL);
+      const params = new URLSearchParams();
+      params.append('grant_type', 'client_credentials');
+      params.append('client_id', CLIENT_ID);
+      params.append('client_secret', CLIENT_SECRET);
+
+      const response = await axios.post(AUTH_URL, params.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
 
       this.accessToken = response.data.access_token;
       this.expiresAt = Date.now() + (response.data.expires_in - 60) * 1000;
       return this.accessToken;
     } catch (error) {
-      console.warn('OpenSky Auth failed. In dev mode, use "netlify dev" for full security.');
+      console.warn('OpenSky Auth error, trying anonymous mode.');
       return null;
     }
   }
@@ -33,7 +44,7 @@ class OpenSkyClient {
     try {
       const token = await this.getAccessToken();
       const response = await axios.get(BASE_URL, {
-        params: { token }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       
       const flights = (response.data.states || []).map(state => ({
@@ -52,7 +63,7 @@ class OpenSkyClient {
       this.lastSuccessfulFlights = flights;
       return flights;
     } catch (error) {
-      if (error.response?.status === 429 && this.lastSuccessfulFlights.length > 0) {
+      if (this.lastSuccessfulFlights.length > 0) {
         return this.lastSuccessfulFlights;
       }
       console.error('Failed to fetch flights:', error);
