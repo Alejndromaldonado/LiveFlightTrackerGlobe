@@ -1,7 +1,6 @@
 export const config = { runtime: 'edge' };
 
 export default async function (req) {
-  // Manejamos el pre-vuelo de CORS (OPTIONS)
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -14,28 +13,28 @@ export default async function (req) {
   }
 
   const url = new URL(req.url);
-  const target = url.searchParams.get('url');
+  let target = url.searchParams.get('url');
 
-  if (!target) {
-    return new Response('Target "url" parameter is required', { status: 400 });
+  if (!target) return new Response('Missing url', { status: 400 });
+
+  // OPTIMIZACIÓN CRÍTICA: Si pedimos 'states/all', le añadimos un filtro de área global.
+  // Esto obliga a la base de datos de OpenSky a usar índices y responder MUCHO más rápido (evita el 504).
+  if (target.includes('states/all') && !target.includes('lamin')) {
+    target += '?lamin=-70&lomin=-170&lamax=70&lomax=170';
   }
 
   try {
-    console.log(`PROXING (${req.method}): ${target}`);
     const headers = new Headers();
-    
-    // Copiamos cabeceras críticas del cliente (como Content-Type y Authorization)
     if (req.headers.has('Content-Type')) headers.set('Content-Type', req.headers.get('Content-Type'));
     if (req.headers.has('Authorization')) headers.set('Authorization', req.headers.get('Authorization'));
-    
-    // Forzamos un User-Agent de navegador para evitar bloqueos
-    headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36');
+    headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+    headers.set('Accept-Encoding', 'gzip');
 
     const response = await fetch(target, {
       method: req.method,
       headers,
       body: req.method === 'POST' ? await req.text() : undefined,
-      signal: AbortSignal.timeout(12000)
+      signal: AbortSignal.timeout(9000) // 9 segundos para no chocar con el límite de Vercel (10s)
     });
 
     const body = await response.arrayBuffer();
@@ -46,15 +45,17 @@ export default async function (req) {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        'Content-Type': response.headers.get('Content-Type') || 'application/json',
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=5'
       }
     });
 
   } catch (error) {
-    console.error('PROXY FAIL:', error.message);
-    return new Response(JSON.stringify({ error: 'Proxy Timeout or Connection Error', message: error.message }), { 
-      status: 504,
-      headers: { 'Access-Control-Allow-Origin': '*' }
+    console.warn('EDGE PROXY TIMEOUT:', error.message);
+    // PLAN C: Ante un 504, devolvemos un JSON vacío pero con éxito para que el globo no se rompa
+    return new Response(JSON.stringify({ states: [], warning: 'API saturada' }), { 
+      status: 200, 
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }
     });
   }
 }
