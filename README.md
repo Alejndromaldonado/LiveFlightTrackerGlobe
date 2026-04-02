@@ -2,6 +2,8 @@
 
 ¡Bienvenido al radar de vuelos global más avanzado y estético del ecosistema! 🌎🚀🛰️
 
+**🔗 [Demos en Vivo en Vercel](https://live-flight-tracker-globe.vercel.app/)**
+
 Este proyecto ha evolucionado de un simple seguidor de vuelos a una plataforma de visualización masiva de datos en tiempo real, capaz de renderizar hasta **4,000 aeronaves simultáneamente** sin comprometer la fluidez.
 
 ## 🚀 Arquitectura "Radar Lake" (Data-Driven)
