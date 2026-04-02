@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const SUPABASE_BASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://jpqsmpldwttqnffprapx.supabase.co/rest/v1';
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_BASE_URL = 'https://jpqsmpldwttqnffprapx.supabase.co/rest/v1';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcXNtcGxkd3R0cW5mZnByYXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNzk1ODksImV4cCI6MjA5MDY1NTU4OX0.9UNmlqL3FVN5lB_xL1cr5OjsfQEfUqStDCmK47_NXV0';
 
 class OpenSkyClient {
   constructor() {
