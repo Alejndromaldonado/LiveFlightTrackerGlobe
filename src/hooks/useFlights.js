@@ -1,66 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { opensky } from '../api/opensky';
 
-const STORAGE_KEY = 'opensky_last_flights';
-const STATS_KEY = 'opensky_last_stats';
-const TIMESTAMP_KEY = 'opensky_last_update';
-
-export const useFlights = (limit = 400) => {
+export function useFlights(limit = 400, filterType = 'all') {
   const [flights, setFlights] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [dataMode, setDataMode] = useState('live'); 
+  const [dataMode, setDataMode] = useState('live');
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
+  const refreshInterval = useRef(null);
 
-  const fetchFlights = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      const [flightsData, statsData] = await Promise.all([
-        opensky.getFlights(limit),
+      const [flightData, statsData] = await Promise.all([
+        opensky.getFlights(limit, filterType),
         opensky.getStats()
       ]);
-      
-      if (flightsData && flightsData.length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(flightsData));
-        localStorage.setItem(STATS_KEY, JSON.stringify(statsData));
-        const timestamp = new Date().toLocaleString();
-        localStorage.setItem(TIMESTAMP_KEY, timestamp);
-        
-        setFlights(flightsData);
-        setStats(statsData);
-        setDataMode('live');
-        setLastUpdateTime(timestamp);
-        setError(null);
-      } else {
-        throw new Error('Sin datos de vuelo');
-      }
-      setLoading(false);
+
+      setFlights(flightData);
+      setStats(statsData);
+      setLastUpdateTime(new Date().toLocaleTimeString());
+      setDataMode(flightData.length > 0 ? 'live' : 'cached');
     } catch (err) {
-      console.warn('Supabase fetch failed, loading local cache:', err);
-      const cached = localStorage.getItem(STORAGE_KEY);
-      const cachedStats = localStorage.getItem(STATS_KEY);
-      const cachedTime = localStorage.getItem(TIMESTAMP_KEY);
-      
-      if (cached) {
-        setFlights(JSON.parse(cached));
-        if (cachedStats) setStats(JSON.parse(cachedStats));
-        setDataMode('persistent');
-        setLastUpdateTime(cachedTime);
-        setError(`Portal de Datos: Mostrando última sesión.`);
-      } else {
-        setError(`Error: ${err.message}. No hay datos previos.`);
-      }
+      setError(err.message || 'Error al obtener datos');
+      setDataMode('cached');
+    } finally {
       setLoading(false);
     }
-  };
+  }, [limit, filterType]);
 
   useEffect(() => {
-    fetchFlights();
-    const interval = setInterval(fetchFlights, 120000);
-    return () => clearInterval(interval);
-  }, [limit]); // Re-fetch when limit changes
+    fetchAllData();
+    refreshInterval.current = setInterval(fetchAllData, 30000);
+    return () => clearInterval(refreshInterval.current);
+  }, [fetchAllData]);
 
-  return { flights, stats, loading, error, refresh: fetchFlights, dataMode, lastUpdateTime };
-};
+  return { 
+    flights, 
+    stats, 
+    loading, 
+    error, 
+    refresh: fetchAllData, 
+    dataMode, 
+    lastUpdateTime 
+  };
+}
