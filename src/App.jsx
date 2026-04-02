@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import GlobeVisualization from './components/Globe';
 import Sidebar from './components/Sidebar';
 import ControlPanel from './components/ControlPanel';
@@ -7,6 +7,7 @@ import InsightsPanel from './components/InsightsPanel';
 import QuickActions from './components/QuickActions';
 import MapModal from './components/MapModal';
 import { useFlights } from './hooks/useFlights';
+import { useDevice } from './hooks/useDevice';
 import { Loader2 } from 'lucide-react';
 import './index.css';
 
@@ -15,9 +16,29 @@ function App() {
   const [showMap, setShowMap] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [heatmapMode, setHeatmapMode] = useState(false);
-  
-  const limit = displayMode === 'heavy' ? 4000 : 400;
-  // Hook con soporte para filtros de servidor (especialmente útil para 'ground')
+
+  // Hook para detectar dispositivo y optimizar rendimiento
+  const device = useDevice();
+
+  // En móvil, forzar modo light para mejor rendimiento
+  useEffect(() => {
+    if (device.isMobile && displayMode === 'heavy') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDisplayMode('light');
+    }
+  }, [device.isMobile, displayMode]);
+
+  // Calcular límite de vuelos según dispositivo y modo
+  const limit = useMemo(() => {
+    const baseLimit = displayMode === 'heavy' ? 4000 : 400;
+    // En móvil, usar el límite recomendado del hook
+    if (device.isMobile) {
+      return device.getFlightLimit(baseLimit);
+    }
+    return baseLimit;
+  }, [displayMode, device]);
+
+  // Hook con soporte para filtros de servidor
   const { flights, stats, loading, error, refresh, dataMode, lastUpdateTime } = useFlights(limit, activeFilter);
   
   const [selectedFlight, setSelectedFlight] = useState(null);

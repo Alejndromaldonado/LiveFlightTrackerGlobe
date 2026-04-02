@@ -1,11 +1,67 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Plane, Navigation, Shield, Wind, Globe as GlobeIcon, X, Map } from 'lucide-react';
+import { useDevice } from '../hooks/useDevice';
 
 const Sidebar = ({ flight, onClose, onShowMap }) => {
+  const device = useDevice();
+  const sidebarRef = useRef(null);
+
+  useEffect(() => {
+    if (!device.isMobile || !sidebarRef.current) return;
+
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    const handleTouchStart = (e) => {
+      startY = e.touches[0].clientY;
+      isDragging = true;
+    };
+
+    const handleTouchMove = (e) => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+
+      // Only allow downward swipe from top of drawer
+      if (deltaY > 0 && e.target.closest('.sidebar-header')) {
+        const translateY = Math.min(deltaY, 100); // Max 100px drag
+        sidebarRef.current.style.transform = `translateY(${translateY}px)`;
+        sidebarRef.current.style.transition = 'none';
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const deltaY = currentY - startY;
+      sidebarRef.current.style.transition = '';
+
+      // If dragged down more than 50px, close the drawer
+      if (deltaY > 50) {
+        onClose();
+      } else {
+        sidebarRef.current.style.transform = '';
+      }
+    };
+
+    const sidebar = sidebarRef.current;
+    sidebar.addEventListener('touchstart', handleTouchStart, { passive: true });
+    sidebar.addEventListener('touchmove', handleTouchMove, { passive: true });
+    sidebar.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      sidebar.removeEventListener('touchstart', handleTouchStart);
+      sidebar.removeEventListener('touchmove', handleTouchMove);
+      sidebar.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [device.isMobile, onClose]);
+
   if (!flight) return null;
 
   return (
-    <div className="sidebar">
+    <div className="sidebar" ref={sidebarRef}>
       <div className="sidebar-header">
         <div className="title-group">
           <Plane className="icon neon-blue" />
