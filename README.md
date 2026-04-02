@@ -1,49 +1,53 @@
-# ✈️ Premium Live Flight Tracker Globe
+# ✈️ Live Flight Tracker Globe (Enterprise Edition v2.7)
 
-Un rastreador de vuelos 3D de alta precisión con analítica en tiempo real y una interfaz premium basada en **Glassmorphism**. Este proyecto visualiza miles de aeronaves sobre un globo terráqueo interactivo, proporcionando métricas de vuelo, récords globales y un diseño optimizado para portafolio.
+¡Bienvenido al radar de vuelos global más avanzado y estético del ecosistema! 🌎🚀🛰️
 
-![Preview](public/favicon.png)
+Este proyecto ha evolucionado de un simple seguidor de vuelos a una plataforma de visualización masiva de datos en tiempo real, capaz de renderizar hasta **4,000 aeronaves simultáneamente** sin comprometer la fluidez.
 
-## 🌟 Características Principales
+## 🚀 Arquitectura "Radar Lake" (Data-Driven)
 
-- **Globo 3D Interactivo**: Visualización fluida con `react-globe.gl` y `Three.js`.
-- **Analítica en Tiempo Real**: Panel de KPIs que calcula fases de vuelo (ascenso, crucero, descenso) y promedios globales.
-- **Resiliencia de Datos**: Sistema de caché persistente (`localStorage`) que permite ver el último estado si la API no está disponible.
-- **Seguridad Premium**: Arquitectura **Serverless** (Netlify Functions) que oculta las API Keys y protege contra ataques de cadena de suministro (Axios 1.13.0).
-- **Modos de Rendimiento**: Opción de carga "Light" (400 aviones) y "Heavy" (Población total) para adaptarse a cualquier hardware.
+A diferencia de los trackers convencionales que dependen de llamadas directas a APIs frágiles, este sistema utiliza un modelo de **Data Lake Moderno**:
 
-## 🚀 Tecnologías
+1.  **AWS Ingestion Worker**: Un script de Python en el ala de Amazon (AWS) realiza peticiones paralelas a la red OpenSky y realiza un `UPSERT` masivo en nuestra base de datos cada 2 minutos.
+2.  **Supabase Backend**: Repositorio central de datos en PostgreSQL que actúa como caché persistente y motor de analíticas.
+3.  **Vercel Proxy**: Una capa de seguridad en Edge que anonimiza las peticiones y evita bloqueos de IP, asegurando una conexión 24/7.
+4.  **Parallel Fetching**: El frontend utiliza un sistema de peticiones paralelas para superar el límite de 1,000 registros por consulta, habilitando el modo **Ultra Heavy (4,000 pts)**.
 
-- **Frontend**: React 19, Vite, TailwindCSS (for base) / Vanilla CSS (Custom).
-- **Visualización**: Three.js, React-Globe.gl.
-- **API**: OpenSky Network (ADS-B Data).
-- **Backend**: Netlify Functions (Node.js).
+## ✨ Características Premium
 
-## 🛠️ Instalación y Desarrollo Local
+-   🌍 **Visualización 3D Majestuosa**: Globo interactivo con texturas nocturnas, atmósfera dinámica y fronteras políticas (GeoJSON).
+-   🛰️ **Ultra-Heavy Mode**: Capacidad de visualización de 4,000 aeronaves con rotación de cabecera y escala de altitud real.
+-   🔥 **3D Heatmap**: Mapa de densidad térmica basado en contenedores hexagonales (Hex-Binned) para analizar el tráfico mundial.
+-   ☁️ **Glass Cloud Tooltips**: Tooltips con silueta de nube y efecto de cristal (Glassmorphism) para monitorizar KPIs de flota.
+-   🛠️ **Centro de Mando Dual**:
+    *   **Panel Izquierdo**: Búsqueda local y filtros de categoría (Estable, Ascenso).
+    *   **Panel Derecho**: Sistemas de radar, analítica de records mundiales e inspección de aeronaves.
+-   🗺️ **Map Modal**: Integración de OpenStreetMap en un popup con efecto de desenfoque de fondo (*backdrop-filter: blur*).
 
-1. Clona el repositorio:
-   ```bash
-   git clone https://github.com/Alejndromaldonado/LiveFlightTrackerGlobe.git
-   ```
-2. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-3. Configura las variables de entorno en un archivo `.env`:
-   ```env
-   VITE_OPENSKY_CLIENT_ID=tu_usuario
-   VITE_OPENSKY_CLIENT_SECRET=tu_password
-   ```
-4. Inicia el servidor de desarrollo:
-   ```bash
-   npm run dev
-   # O mejor, para probar las funciones serverless:
-   netlify dev
-   ```
+## 🛠️ Tech Stack
 
-## 🌐 Despliegue en Netlify
+-   **Frontend**: React.js, React-Globe.gl (Three.js Engine).
+-   **Estilos**: Vanilla CSS con Diseño Atómico y Variables Globales.
+-   **Iconografía**: Lucide React.
+-   **Backend / DB**: Supabase (PostgreSQL) con funciones RPC para analítica de flota.
+-   **Ingesta**: Python (Worker AWS).
+-   **Infraestructura**: Vercel (Edge Runtime).
 
-Este proyecto está pre-configurado para desplegarse en Netlify con un solo clic. Las API Keys se gestionan de forma segura a través del dashboard de Netlify.
+## 📊 Métricas de Tiempo Real
+
+El sistema realiza cálculos en el servidor para mostrar:
+-   **Índice de Crucero**: Porcentaje de flota en vuelo estable.
+-   **Velocidad Media Mundial**: Promedio de velocidad de toda la flota activa.
+-   **Récords Globales**: Vuelo más alto, más rápido y origen más común detectado en tiempo real.
 
 ---
-Hecho con ❤️ para mi Portafolio Personal.
+
+### 🕒 ¿Cómo empezar?
+
+1.  **Clona el repositorio**: `git clone ...`
+2.  **Instala dependencias**: `npm install`
+3.  **Configura variables**: Añade tu `anon_key` de Supabase en `opensky.js`.
+4.  **Despega**: `npm run dev`
+
+---
+*Diseñado para visualización cinematográfica y análisis técnico de datos aeroespaciales.* 🌍✈️🛰️
