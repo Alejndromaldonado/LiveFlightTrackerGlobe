@@ -28,7 +28,7 @@ const QuickActions = ({
         
         <div className="detection-count-badge">
           <BarChart2 size={14} />
-          <span>{flightCount} Detectados</span>
+          <span>{flightCount.toLocaleString()} OBJETOS EN RENDER</span>
         </div>
       </div>
     </div>
