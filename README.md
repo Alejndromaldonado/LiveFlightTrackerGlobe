@@ -1,5 +1,7 @@
 # ✈️ Live Flight Tracker Globe (Enterprise Edition v2.7)
 
+![Live Flight Tracker Globe Status](https://res.cloudinary.com/dowmf68wy/image/upload/v1775174966/Captura_de_pantalla_2026-04-02_190752_jzsfyg.png)
+
 ¡Bienvenido al radar de vuelos global más avanzado y estético del ecosistema! 🌎🚀🛰️
 
 **🔗 [Demos en Vivo en Vercel](https://live-flight-tracker-globe.vercel.app/)**
